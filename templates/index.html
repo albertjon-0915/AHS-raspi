@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Position Interface</title>
+    <style>
+        :root {
+            /* Core Palette - White/Clean Industrial */
+            --bg-body: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6E6E73;
+            --accent-color: #007AFF;
+            --border-color: #E5E5EA;
+            --danger-color: #FF3B30;
+            --input-bg: #F2F2F7;
+            
+            /* Spacing & Layout */
+            --radius-lg: 12px;
+            --radius-sm: 6px;
+            --shadow-card: 0 4px 16px rgba(0,0,0,0.04);
+            --shadow-float: 0 6px 24px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: auto; 
+            user-select: none;
+        }
+
+        /* --- 1. Top Information HUD --- */
+        .hud-bar {
+            height: 48px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            z-index: 100;
+            flex-shrink: 0;
+            min-width: 680px;
+        }
+
+        .hud-title {
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            background-color: #34C759;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.2);
+        }
+
+        .hud-metrics {
+            display: flex;
+            gap: 16px;
+            font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-item span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* --- 2. Main Workspace --- */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column; 
+            padding: 24px;
+            gap: 20px; 
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            justify-content: center; 
+        }
+
+        /* Wrapper for side-by-side panels */
+        .content-wrapper {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            align-items: stretch;
+            flex-wrap: nowrap; 
+            min-width: 650px;
+        }
+
+        /* LEFT SIDE: Display Panel */
+        .display-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: center;
+            min-width: 250px;
+        }
+
+        .readout-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .readout-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .readout-value {
+            font-family: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.05em;
+            line-height: 1;
+        }
+
+        .readout-unit {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            vertical-align: super;
+            margin-left: 4px;
+        }
+
+        .readout-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+        .readout-card.azimuth::before { background-color: var(--accent-color); }
+        .readout-card.altitude::before { background-color: #FF9500; }
+
+        /* RIGHT SIDE: Control Panel */
+        .control-panel {
+            width: 320px;
+            flex-shrink: 0;
+        }
+
+        .control-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            height: 100%;
+        }
+
+        /* Form Styling */
+        .input-grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-group label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .field-input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: 12px 14px; 
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            cursor: pointer; 
+        }
+
+        .field-input:focus {
+            background-color: #fff;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        /* Button Styling */
+        .action-btn {
+            width: 100%;
+            background-color: var(--text-primary);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover { background-color: #000; }
+        .action-btn:active { transform: scale(0.98); }
+
+        /* Reset Button Style */
+        .reset-btn {
+            background-color: #ffffff;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(255, 59, 48, 0.1);
+        }
+
+        .reset-btn:hover {
+            background-color: var(--danger-color);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.25);
+        }
+
+        /* --- 3. System Menu (Bottom Right) --- */
+        .system-menu-wrapper {
+            position: fixed; 
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+        }
+
+        .menu-toggle {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: white;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-float);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .menu-toggle:hover { transform: translateY(-2px); }
+
+        .menu-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-primary);
+            transition: transform 0.3s;
+        }
+
+        .menu-options {
+            position: absolute;
+            bottom: 52px;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 140px;
+            box-shadow: var(--shadow-float);
+            padding: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px) scale(0.95);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom right;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: none;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .menu-item:hover { background-color: var(--bg-body); }
+        .menu-item.danger { color: var(--danger-color); }
+        .menu-item.danger svg { fill: var(--danger-color); }
+        .menu-item svg { width: 16px; height: 16px; fill: var(--text-primary); }
+
+        .system-menu-wrapper.open .menu-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        .system-menu-wrapper.open .menu-toggle svg { transform: rotate(90deg); }
+
+        /* --- 4. Loading Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .confirm-box {
+            background: #1a1a1a;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #333;
+            text-align: center;
+            color: white;
+        }
+
+        /* Container for the buttons to sit side-by-side */
+        .confirm-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        /* Base style for both buttons */
+        .confirm-buttons button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-family: inherit; /* Keeps your font consistent */
+            min-width: 100px;
+        }
+
+        /* Cancel Button: Neutral and subtle */
+        .btn-cancel {
+            background: #333;
+            color: #ccc;
+        }
+
+        .btn-cancel:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        /* Danger Button: Red for Shutdown/Reboot */
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Active/Press effect for touchscreens */
+        .confirm-buttons button:active {
+            transform: scale(0.95);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            min-width: 260px;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h3 {
+            margin-top: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .modal-content p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        /* Spinner Animation */
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--input-bg);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- 5. Popover Overlays (Numpad & Pickers) --- */
+        
+        .popover-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.1); /* Subtle dim */
+            z-index: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            /* FORCE CENTER for ALL modals */
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+        }
+
+        .popover-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popover-container {
+            /* Flex centering handles position */
+            position: relative; 
+            background: #FFFFFF;
+            width: 280px; /* Slight increase for calendar */
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .popover-overlay.active .popover-container {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .popover-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .popover-close {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* --- Numpad Specifics --- */
+        .numpad-display-box {
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            text-align: right;
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .numpad-btn {
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            padding: 10px 0;
+            font-size: 1.1rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .numpad-btn:active { background: #e1e1e6; }
+        .numpad-btn.accent { background: var(--accent-color); color: white; }
+        .numpad-btn.danger { background: rgba(255, 59, 48, 0.1); color: var(--danger-color); }
+
+        /* --- Time Picker Grid --- */
+        .picker-grid {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .picker-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 50px;
+        }
+
+        .arrow-btn {
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            width: 100%; height: 32px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.1s;
+        }
+        .arrow-btn:hover { background: #e1e1e6; }
+        .arrow-btn:active { background: #d1d1d6; color: var(--text-primary); transform: scale(0.95); }
+
+        .picker-val {
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .picker-sep {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: -2px;
+        }
+
+        /* --- NEW: Calendar Specifics --- */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .calendar-nav-btn {
+            background: var(--input-bg);
+            border: none;
+            width: 32px; height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+        
+        .calendar-day-header {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding-bottom: 4px;
+        }
+        
+        .calendar-day {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: background 0.1s;
+        }
+        
+        .calendar-day:hover { background-color: var(--bg-body); }
+        .calendar-day.empty { pointer-events: none; }
+        .calendar-day.today { border: 1px solid var(--accent-color); color: var(--accent-color); }
+        .calendar-day.selected { background-color: var(--accent-color); color: white; font-weight: 600; }
+
+        .full-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent-color);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .full-btn:active { transform: scale(0.98); box-shadow: none; }
+
+    </style>
+</head>
+<body>
+
+    <!-- HUD Header -->
+    <header class="hud-bar">
+        <div class="hud-title">
+            <div class="status-dot"></div>
+            HELIODON
+        </div>
+        <div class="hud-metrics">
+            <div class="metric-item">LAT: <span id="nav-lat">--.----</span></div>
+            <div class="metric-item">LON: <span id="nav-lon">--.----</span></div>
+            <div class="metric-item">DATE: <span id="nav-date">--/--/----</span></div>
+            <div class="metric-item">T: <span id="nav-time">--:--</span></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="workspace">
+        
+        <!-- Wrapper for Split View -->
+        <div class="content-wrapper">
+            <!-- LEFT: Display Panel (Output) -->
+            <div class="display-panel">
+                <div class="readout-card azimuth">
+                    <div class="readout-label">Calculated Azimuth</div>
+                    <div class="readout-value"><span id="disp-azimuth">---.---</span><span class="readout-unit">°</span></div>
+                </div>
+                
+                <div class="readout-card altitude">
+                    <div class="readout-label">Calculated Altitude</div>
+                    <div class="readout-value"><span id="disp-altitude">--.---</span><span class="readout-unit">°</span></div>
+                </div>
+
+                <!-- Reset Button -->
+                <button type="button" class="reset-btn" onclick="resetSystem()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    RESET CALIBRATION
+                </button>
+            </div>
+
+            <!-- RIGHT: Control Panel (Input) -->
+            <div class="control-panel">
+                <div class="control-card">
+                    <form id="calForm">
+                        <div class="input-grid">
+                            <div class="field-group">
+                                <label>Latitude</label>
+                                <input type="text" id="lat" class="field-input numpad-trigger" placeholder="0.0000" readonly required>
+                            </div>
+                            <div class="field-group">
+                                <label>Longitude</label>
+                                <input type="text" id="lon" class="field-input numpad-trigger" placeholder="0.0000" readonly required>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="field-group">
+                                    <label>Date</label>
+                                    <input type="text" id="date" class="field-input date-trigger" placeholder="YYYY-MM-DD" readonly required>
+                                </div>
+                                <div class="field-group">
+                                    <label>Time</label>
+                                    <input type="text" id="time" class="field-input time-trigger" placeholder="12:00 PM" readonly required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="action-btn">
+                            <span>CALIBRATE</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 1. NUMPAD POPOVER (Centered) -->
+    <div class="popover-overlay" id="virtualNumpad">
+        <div class="popover-container" id="numpadContainer">
+            <div class="popover-header">
+                <span id="numpadLabel">EDITING VALUE</span>
+                <button class="popover-close" onclick="closeNumpad()">Done</button>
+            </div>
+            
+            <div class="numpad-display-box" id="numpadDisplayValue"></div>
+
+            <div class="numpad-grid">
+                <button class="numpad-btn" onclick="kpInput('1')">1</button>
+                <button class="numpad-btn" onclick="kpInput('2')">2</button>
+                <button class="numpad-btn" onclick="kpInput('3')">3</button>
+                <button class="numpad-btn" onclick="kpInput('4')">4</button>
+                <button class="numpad-btn" onclick="kpInput('5')">5</button>
+                <button class="numpad-btn" onclick="kpInput('6')">6</button>
+                <button class="numpad-btn" onclick="kpInput('7')">7</button>
+                <button class="numpad-btn" onclick="kpInput('8')">8</button>
+                <button class="numpad-btn" onclick="kpInput('9')">9</button>
+                <button class="numpad-btn" onclick="kpInput('.')">.</button>
+                <button class="numpad-btn" onclick="kpInput('0')">0</button>
+                <button class="numpad-btn" onclick="kpInput('-')">+/-</button>
+                <button class="numpad-btn danger" onclick="kpBackspace()">⌫</button>
+                <button class="numpad-btn accent" style="grid-column: span 2;" onclick="closeNumpad()">ENTER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TIME PICKER POPOVER (Centered) -->
+    <div class="popover-overlay" id="virtualTimePicker">
+        <div class="popover-container" id="timeContainer">
+            <div class="popover-header">
+                <span>SELECT TIME</span>
+                <button class="popover-close" onclick="closeTimePicker()">Done</button>
+            </div>
+            <div class="picker-grid">
+                <!-- HOUR -->
+                <div class="picker-col">
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'hour', 1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▲</button>
+                    <div class="picker-val" id="dispHour">12</div>
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'hour', -1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▼</button>
+                </div>
+                <div class="picker-sep">:</div>
+                <!-- MINUTE -->
+                <div class="picker-col">
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'min', 1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▲</button>
+                    <div class="picker-val" id="dispMin">00</div>
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'min', -1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▼</button>
+                </div>
+                <!-- AM/PM -->
+                <div class="picker-col">
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'period', 1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▲</button>
+                    <div class="picker-val" id="dispPeriod" style="font-size: 1rem;">PM</div>
+                    <button class="arrow-btn" onpointerdown="startAdjust('time', 'period', -1)" onpointerup="stopAdjust()" onpointerleave="stopAdjust()">▼</button>
+                </div>
+            </div>
+            <button class="full-btn" onclick="closeTimePicker()">SET TIME</button>
+        </div>
+    </div>
+
+    <!-- 3. CALENDAR DATE PICKER (NEW CENTERED) -->
+    <div class="popover-overlay" id="virtualDatePicker">
+        <div class="popover-container" id="dateContainer">
+            <div class="popover-header">
+                <span>SELECT DATE</span>
+                <button class="popover-close" onclick="closeDatePicker()">Done</button>
+            </div>
+            
+            <!-- Calendar Navigation -->
+            <div class="calendar-header">
+                <button class="calendar-nav-btn" onclick="changeMonth(-1)">&#9664;</button>
+                <span id="calMonthYear">January 2024</span>
+                <button class="calendar-nav-btn" onclick="changeMonth(1)">&#9654;</button>
+            </div>
+
+            <!-- Calendar Days -->
+            <div class="calendar-grid" id="calGrid">
+                <!-- Headers -->
+                <div class="calendar-day-header">S</div>
+                <div class="calendar-day-header">M</div>
+                <div class="calendar-day-header">T</div>
+                <div class="calendar-day-header">W</div>
+                <div class="calendar-day-header">T</div>
+                <div class="calendar-day-header">F</div>
+                <div class="calendar-day-header">S</div>
+                <!-- JS Populates Days -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal-overlay" id="loadingModal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <h3>Positioning Sun</h3>
+            <p>Calculating coordinates...</p>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="custom-confirm" class="modal-overlay">
+        <div class="confirm-box">
+            <h3>System Action</h3>
+            <p id="confirm-message">Are you sure?</p>
+            <div class="confirm-buttons">
+                <button onclick="closeConfirm()" class="btn-cancel">Cancel</button>
+                <button id="confirm-yes" class="btn-danger">Yes, Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Menu -->
+    <div class="system-menu-wrapper" id="sysMenu">
+        <div class="menu-options">
+            <button class="menu-item" onclick="triggerAction('reboot')">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                Reboot
+            </button>
+            <button class="menu-item danger" onclick="triggerAction('poweroff')">
+                <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
+                Power Off
+            </button>
+        </div>
+        <button class="menu-toggle" onclick="toggleMenu()">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Continuous Press Logic ---
+            let pressTimer = null;
+            let pressInterval = null;
+
+            window.startAdjust = function(type, unit, delta) {
+                window.oncontextmenu = function(e) { e.preventDefault(); return false; }
+                if(type === 'time') adjustTime(unit, delta);
+                // Date adjust moved to calendar logic
+
+                pressTimer = setTimeout(() => {
+                    pressInterval = setInterval(() => {
+                        if(type === 'time') adjustTime(unit, delta);
+                    }, 100);
+                }, 500);
+            };
+
+            window.stopAdjust = function() {
+                clearTimeout(pressTimer);
+                clearInterval(pressInterval);
+                window.oncontextmenu = null;
+            };
+
+            // --- Toggle Menu ---
+            window.toggleMenu = function() {
+                const menu = document.getElementById('sysMenu');
+                if (menu) menu.classList.toggle('open');
+            }
+            document.addEventListener('click', function(event) {
+                const menu = document.getElementById('sysMenu');
+                if (menu && menu.classList.contains('open')) {
+                    const toggle = document.querySelector('.menu-toggle');
+                    if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+                        menu.classList.remove('open');
+                    }
+                }
+            });
+            
+            window.triggerAction = function(action) {
+                const modal = document.getElementById('custom-confirm');
+                const msg = document.getElementById('confirm-message');
+                const yesBtn = document.getElementById('confirm-yes');
+
+                // Update the text and show the modal
+                msg.innerText = `Are you sure you want to ${action} the system?`;
+                modal.classList.add('active');
+
+                // What happens when they click "Yes"
+                yesBtn.onclick = function() {
+                    fetch(`${action === 'reboot' ? "/reset" : "/shutdown"}`, { method: 'POST' });
+                    modal.classList.remove('active');
+                    toggleMenu();
+                };
+            }
+
+            window.closeConfirm = function() {
+                document.getElementById('custom-confirm').classList.remove('active');
+            };
+
+            window.resetSystem = function() {
+                document.getElementById('calForm').reset();
+                ['disp-azimuth', 'disp-altitude', 'nav-lat', 'nav-lon', 'nav-date', 'nav-time'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.innerText = id.includes('az') || id.includes('alt') ? (id.includes('az') ? '---.---' : '--.---') : (id.includes('date') ? '--/--/----' : (id.includes('time') ? '--:--' : '--.----'));
+                });
+
+                const now = new Date();
+                
+                const dateEl = document.getElementById('date');
+                if(dateEl) {
+                    let y = now.getFullYear();
+                    let m = String(now.getMonth()+1).padStart(2,'0');
+                    let d = String(now.getDate()).padStart(2,'0');
+                    dateEl.value = `${y}-${m}-${d}`;
+                }
+                
+                const timeEl = document.getElementById('time');
+                if(timeEl) {
+                    let h = now.getHours();
+                    let min = now.getMinutes();
+                    let ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12 || 12;
+                    let strTime = (h < 10 ? '0'+h : h) + ':' + (min < 10 ? '0'+min : min) + ' ' + ampm;
+                    timeEl.value = strTime;
+                }
+                
+                const display = document.getElementById('numpadDisplayValue');
+                if(display) display.innerText = "";
+            }
+
+            // --- Numpad Logic ---
+            let activeInput = null;
+            const numpadOverlay = document.getElementById('virtualNumpad');
+            const numpadLabel = document.getElementById('numpadLabel');
+            const numpadDisplay = document.getElementById('numpadDisplayValue');
+
+            document.querySelectorAll('.numpad-trigger').forEach(input => {
+                input.addEventListener('click', (e) => {
+                    activeInput = e.target;
+                    if (numpadLabel && activeInput.previousElementSibling) {
+                        numpadLabel.innerText = "EDITING: " + activeInput.previousElementSibling.innerText;
+                    }
+                    if (numpadDisplay) numpadDisplay.innerText = activeInput.value;
+                    numpadOverlay.classList.add('active');
+                });
+            });
+
+            window.closeNumpad = function() {
+                numpadOverlay.classList.remove('active');
+                activeInput = null;
+            }
+            window.kpInput = function(char) {
+                if (!activeInput) return;
+                let val = activeInput.value;
+                if (char === '-') {
+                    if (val.startsWith('-')) activeInput.value = val.substring(1);
+                    else activeInput.value = '-' + val;
+                } else if (char === '.') {
+                    if (!val.includes('.')) activeInput.value = val + char;
+                } else {
+                    activeInput.value = val + char;
+                }
+                if (numpadDisplay) numpadDisplay.innerText = activeInput.value;
+            }
+            window.kpBackspace = function() {
+                if (!activeInput) return;
+                activeInput.value = activeInput.value.slice(0, -1);
+                if (numpadDisplay) numpadDisplay.innerText = activeInput.value;
+            }
+
+            // --- Time Picker Logic ---
+            const timeOverlay = document.getElementById('virtualTimePicker');
+            let activeTimeInput = null;
+            let selHour = 12, selMin = 0, selPeriod = "AM";
+
+            document.querySelectorAll('.time-trigger').forEach(input => {
+                input.addEventListener('click', (e) => {
+                    activeTimeInput = e.target;
+                    let currentVal = activeTimeInput.value || "12:00 PM";
+                    let parts = currentVal.split(/[:\s]/);
+                    if(parts.length >= 3) {
+                        selHour = parseInt(parts[0]);
+                        selMin = parseInt(parts[1]);
+                        selPeriod = parts[2];
+                    }
+                    updateTimeDisplay();
+                    timeOverlay.classList.add('active');
+                });
+            });
+
+            window.adjustTime = function(unit, delta) {
+                if(unit === 'hour') {
+                    selHour += delta;
+                    if(selHour > 12) selHour = 1;
+                    if(selHour < 1) selHour = 12;
+                } else if (unit === 'min') {
+                    selMin += delta;
+                    if(selMin > 59) selMin = 0;
+                    if(selMin < 0) selMin = 59;
+                } else if (unit === 'period') {
+                    selPeriod = selPeriod === "AM" ? "PM" : "AM";
+                }
+                updateTimeDisplay();
+            }
+
+            function updateTimeDisplay() {
+                document.getElementById('dispHour').innerText = selHour < 10 ? '0'+selHour : selHour;
+                document.getElementById('dispMin').innerText = selMin < 10 ? '0'+selMin : selMin;
+                document.getElementById('dispPeriod').innerText = selPeriod;
+            }
+
+            window.closeTimePicker = function() {
+                if(activeTimeInput) {
+                    let hStr = selHour < 10 ? '0'+selHour : selHour;
+                    let mStr = selMin < 10 ? '0'+selMin : selMin;
+                    activeTimeInput.value = `${hStr}:${mStr} ${selPeriod}`;
+                }
+                timeOverlay.classList.remove('active');
+            }
+
+            // --- CUSTOM CALENDAR LOGIC (NEW) ---
+            const dateOverlay = document.getElementById('virtualDatePicker');
+            let activeDateInput = null;
+            let currentCalDate = new Date(); // Tracks the month being viewed
+            let selectedDate = new Date();   // Tracks the selected value
+
+            document.querySelectorAll('.date-trigger').forEach(input => {
+                input.addEventListener('click', (e) => {
+                    activeDateInput = e.target;
+                    
+                    // Parse input value YYYY-MM-DD
+                    if(activeDateInput.value) {
+                        selectedDate = new Date(activeDateInput.value);
+                    } else {
+                        selectedDate = new Date();
+                    }
+                    
+                    // Init view to selected date
+                    currentCalDate = new Date(selectedDate);
+                    
+                    renderCalendar();
+                    dateOverlay.classList.add('active');
+                });
+            });
+
+            window.renderCalendar = function() {
+                const year = currentCalDate.getFullYear();
+                const month = currentCalDate.getMonth();
+                
+                // Update Header
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                document.getElementById('calMonthYear').innerText = `${monthNames[month]} ${year}`;
+                
+                // Render Grid
+                const grid = document.getElementById('calGrid');
+                // Remove existing days (keep first 7 headers)
+                while(grid.children.length > 7) {
+                    grid.removeChild(grid.lastChild);
+                }
+                
+                const firstDay = new Date(year, month, 1).getDay(); // 0-6 Sun-Sat
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                // Padding days
+                for(let i=0; i<firstDay; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-day empty';
+                    grid.appendChild(div);
+                }
+                
+                // Actual days
+                const today = new Date();
+                for(let d=1; d<=daysInMonth; d++) {
+                    const div = document.createElement('div');
+                    div.className = 'calendar-day';
+                    div.innerText = d;
+                    
+                    // Check if today
+                    if(d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        div.classList.add('today');
+                    }
+                    
+                    // Check if selected
+                    if(d === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear()) {
+                        div.classList.add('selected');
+                    }
+                    
+                    div.onclick = () => selectDay(d);
+                    grid.appendChild(div);
+                }
+            }
+
+            window.changeMonth = function(delta) {
+                currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+                renderCalendar();
+            }
+
+            window.selectDay = function(day) {
+                selectedDate = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth(), day);
+                
+                // Format YYYY-MM-DD
+                let y = selectedDate.getFullYear();
+                let m = String(selectedDate.getMonth()+1).padStart(2,'0');
+                let d = String(selectedDate.getDate()).padStart(2,'0');
+                
+                if(activeDateInput) {
+                    activeDateInput.value = `${y}-${m}-${d}`;
+                }
+                
+                closeDatePicker();
+            }
+
+            window.closeDatePicker = function() {
+                dateOverlay.classList.remove('active');
+            }
+
+            // Init
+            resetSystem();
+
+            // Handle Submit
+            const calForm = document.getElementById('calForm');
+            if (calForm) {
+                calForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const dateVal = document.getElementById('date').value;
+                    const time = document.getElementById('time').value;
+                    const tempDate = new Date(`${dateVal} ${time}`);
+
+                    const time24h = new Intl.DateTimeFormat('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).format(tempDate);
+                    
+                    const data = {
+                        latitude: document.getElementById('lat').value,
+                        longitude: document.getElementById('lon').value,
+                        datetime: `${dateVal}T${time24h}`,
+                    };
+
+                    const modal = document.getElementById('loadingModal');
+                    if (modal) modal.classList.add('active');
+
+                    const btn = document.querySelector('.action-btn');
+                    if (btn) {
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<span>CALIBRATED</span>';
+                        btn.style.backgroundColor = '#34C759';
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.style.backgroundColor = '';
+                        }, 2000);
+                    }
+
+                    fetch('/calibrate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    }).then(async res => {
+                        if (modal) modal.classList.remove('active');
+                        const jsonResp = await res.json();
+                        document.getElementById('nav-lat').innerText = parseFloat(data.latitude || 0).toFixed(4);
+                        document.getElementById('nav-lon').innerText = parseFloat(data.longitude || 0).toFixed(4);
+                        document.getElementById('nav-date').innerText = data.date;
+                        document.getElementById('nav-time').innerText = data.time;
+
+                        document.getElementById('disp-azimuth').innerText = jsonResp.azimuth.toFixed(4);
+                        document.getElementById('disp-altitude').innerText = jsonResp.elevation.toFixed(4);
+
+                    }).catch(err => console.log("Backend offline (simulation mode)"));
+                });
+            }
+        });
+    </script>
+</body>
+</html>
