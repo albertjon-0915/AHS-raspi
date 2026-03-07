@@ -42,10 +42,13 @@ def SLR():
     
     for key, value in data.items():
         axis = 'X' if key == 'azimuth' else 'Y'
+        # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
+        #NOTE: change this base on gear ratio of the x and y motor
+        gear_ratio = 1 if key == 'elevation' else 15
 
-        attr = fn.constants(value) 
-        move = fn.move(axis, attr['steps'], attr['delay'])
-        
+        attr = fn.constants(value, gear_ratio) 
+        fn.move(axis, attr['steps'], attr['delay'])
+
         results.append({"axis": axis, "angle": value, "status": "Moved"})
 
     return jsonify(data)
