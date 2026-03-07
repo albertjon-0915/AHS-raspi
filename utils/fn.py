@@ -74,6 +74,11 @@ def origin():
         negative_steps = attr['steps'] * -1
         move(plane, negative_steps, attr['delay'])
 
+def light(state):
+    if state.lower() == 'on':
+        LIGHT.on()
+    elif state.lower() == 'off':
+        LIGHT.off()
 
 def rd_data():
     with open('data.json', 'r') as f:

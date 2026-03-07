@@ -37,13 +37,17 @@ def SLR():
     results = []
 
     config = fn.rd_data()
-    if config['status'] != 'idle':
+    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
         fn.origin()
     
     for key, value in data.items():
         axis = 'X' if key == 'azimuth' else 'Y'
+
+        if key == 'elevation':
+            fn.light('on')
+
         # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
-        #NOTE: change this base on gear ratio of the x and y motor
+        # NOTE: change this base on gear ratio of the x and y motor
         gear_ratio = 1 if key == 'elevation' else 15
 
         attr = fn.constants(value, gear_ratio) 
