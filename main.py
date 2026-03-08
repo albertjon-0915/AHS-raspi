@@ -24,6 +24,7 @@ def SLR():
         clean_date = datetime.strptime(dt, '%Y-%m-%dT%H:%M')
     else:
         clean_date = datetime.now()
+        
     date = clean_date.replace(tzinfo=timezone.utc) # format >> should be utc aware for pysolar to accept
 
     azimuth = get_azimuth(lat, lon, date)
@@ -35,10 +36,19 @@ def SLR():
     }
 
     results = []
-
     config = fn.rd_data()
+
     if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
         fn.origin()
+        config['status'] = 'idle'
+        config['azimuth'] = 0.0
+        config['elevation'] = 0.0
+        fn.set_data('IDLE', config)
+    
+    config['status'] = 'pending'
+    config['azimuth'] = data['azimuth']
+    config['elevation'] = data['elevation']
+    fn.set_data('PENDING', config)
     
     for key, value in data.items():
         axis = 'X' if key == 'azimuth' else 'Y'
@@ -48,7 +58,7 @@ def SLR():
 
         # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
         # NOTE: change this base on gear ratio of the x and y motor
-        gear_ratio = 1 if key == 'elevation' else 15
+        gear_ratio = 15 if key == 'elevation' else 14
 
         attr = fn.constants(value, gear_ratio) 
         fn.move(axis, attr['steps'], attr['delay'])

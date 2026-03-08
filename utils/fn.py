@@ -1,5 +1,6 @@
 from gpiozero import OutputDevice, ButtonBoard, LED
 from time import sleep
+import json
 
 # Pins: [PUL, DIR]
 X = [OutputDevice(17), OutputDevice(27)]
@@ -35,21 +36,19 @@ def constants(step = 0, ratio = 1):
     }
 
 def move(axis, steps, delay):
-    config = rd_data()
-    config['status'] = 'pending'
-    wr_data(config)
-
     motor = X if axis == 'X' else Y
+
     if steps < 0:
         motor[1].on()
-        steps = abs(steps)
     else:
         motor[1].off()
-
+        
     point = getattr(LIMIT, axis.lower())
+    steps = abs(steps)
 
     for _ in range(steps):
         if point.is_active: 
+            LIGHT.off()
             print(f"Reached the limit of system's angle...")
             break
 
@@ -58,9 +57,6 @@ def move(axis, steps, delay):
         motor[0].off()
         sleep(delay)
 
-    config['status'] = 'idle'
-    wr_data(config)
-
     print(f"Moving {TARGET_ANGLE} degrees...")
     return f'DONE {axis}'
 
@@ -68,9 +64,9 @@ def move(axis, steps, delay):
 def origin():
     axis = ['Y', 'X']
     LIGHT.off()
-    attr = constants(abs(-360), 1)
 
     for plane in axis:
+        attr = constants(360, 1)
         negative_steps = attr['steps'] * -1
         move(plane, negative_steps, attr['delay'])
 
@@ -95,6 +91,16 @@ def wr_data(data):
         json.dump(data, f, indent=4) # indent makes it readable
 
 
+def set_data(state, config):
+    if state == 'PENDING':
+        config['status'] = state.lower()
+        wr_data(config)
+
+    if state == 'IDLE':
+        config['status'] = state.lower()
+        wr_data(config)
+    
+    
 # NOTE: This is for testing
 # for _ in range(10):
 #     move_motor('X', total_steps, step_delay)
