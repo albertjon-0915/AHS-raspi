@@ -38,17 +38,26 @@ def SLR():
     results = []
     config = fn.rd_data()
 
-    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-        fn.origin()
+    def idle():
         config['status'] = 'idle'
         config['azimuth'] = 0.0
         config['elevation'] = 0.0
         fn.set_data('IDLE', config)
     
+    print('initial read config')
+    print(config, flush=True)
+
+    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
+        fn.origin()
+        idle()
+    
     config['status'] = 'pending'
     config['azimuth'] = data['azimuth']
     config['elevation'] = data['elevation']
     fn.set_data('PENDING', config)
+
+    print('final config')
+    print(config, flush=True)
     
     for key, value in data.items():
         axis = 'X' if key == 'azimuth' else 'Y'
@@ -58,13 +67,15 @@ def SLR():
 
         # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
         # NOTE: change this base on gear ratio of the x and y motor
-        gear_ratio = 15 if key == 'elevation' else 14
+        gear_ratio = 15 if key == 'azimuth' else 14
 
         attr = fn.constants(value, gear_ratio) 
         fn.move(axis, attr['steps'], attr['delay'])
 
         results.append({"axis": axis, "angle": value, "status": "Moved"})
+        results.append(attr)
 
+    idle()
     return jsonify(data)
 
 @app.route("/shutdown", methods=['GET', 'POST'])

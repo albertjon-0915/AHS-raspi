@@ -1,6 +1,14 @@
 from gpiozero import OutputDevice, ButtonBoard, LED
 from time import sleep
 import json
+import pigpio
+import os
+from pathlib import Path
+
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# DATA_PATH = os.path.join(BASE_DIR, 'data.json')
+# .parent is utils/, .parent.parent is service/
+DATA_PATH = Path(__file__).resolve().parent.parent / "data.json"
 
 # Pins: [PUL, DIR]
 X = [OutputDevice(17), OutputDevice(27)]
@@ -8,9 +16,9 @@ Y = [OutputDevice(23), OutputDevice(24)]
 
 # NOTE: change variables into actual pins, checking the raspi for pinouts
 # Pins: x=azimuth, y=elevation
-LIMIT = ButtonBoard(x=12, y=26)
+LIMIT = ButtonBoard(x=16, y=20, pull_up=False)
 #Pins: LED
-LIGHT = LED(16)
+# LIGHT = LED(21)
 
 TARGET_ANGLE = 0
 
@@ -18,7 +26,7 @@ def constants(step = 0, ratio = 1):
     # Motor Specs
     SPR = 200            # Standard 1.8 degree motor (360 / 1.8)
     MICROSTEPS = 16      # Driver microstepping settings
-    RPM = 90             # Target speed
+    RPM = 60             # Target speed
     TARGET_ANGLE = step  # Change this to whatever angle you want (e.g., 360, 720)
     RATIO = ratio        # Gear ratio for geared motor
 
@@ -35,22 +43,43 @@ def constants(step = 0, ratio = 1):
         'delay': step_delay
     }
 
-def move(axis, steps, delay):
+def move(axis, steps, delay, isOrigin = False):
     motor = X if axis == 'X' else Y
 
     if steps < 0:
-        motor[1].on()
+        print('negative steps', flush=True)
+        if axis == 'X':
+            motor[1].off()
+        else:
+            motor[1].on()
     else:
-        motor[1].off()
-        
-    point = getattr(LIMIT, axis.lower())
-    steps = abs(steps)
+        if axis == 'X':
+            motor[1].on()
+        else:
+            motor[1].off()
 
-    for _ in range(steps):
-        if point.is_active: 
-            LIGHT.off()
-            print(f"Reached the limit of system's angle...")
+        
+    steps = abs(steps)
+    for i in range(steps):
+        point = getattr(LIMIT, axis.lower())
+
+        isStop = False
+        if not isOrigin:
+            isStop = point.is_active
+        else:
+            if i > 500 and point.is_active: 
+                isStop = True
+
+        print(isStop, flush=True)
+        if isStop:
+            light('off')
+            # print(f"Reached the limit of system's angle...")
             break
+
+        # if point.is_active: 
+        #     light('off')
+        #     # print(f"Reached the limit of system's angle...")
+        #     break
 
         motor[0].on()
         sleep(delay)
@@ -63,21 +92,28 @@ def move(axis, steps, delay):
 
 def origin():
     axis = ['Y', 'X']
-    LIGHT.off()
+    light('off')
 
     for plane in axis:
-        attr = constants(360, 1)
+        gear_ratio = 15 if plane == 'X' else 14
+        attr = constants(360, gear_ratio)
         negative_steps = attr['steps'] * -1
-        move(plane, negative_steps, attr['delay'])
+        # print('negative_steps', flush=True)
+        # print(negative_steps, flush=True)
+        move(plane, negative_steps, attr['delay'], True)
 
 def light(state):
-    if state.lower() == 'on':
-        LIGHT.on()
-    elif state.lower() == 'off':
-        LIGHT.off()
+    isOn = 1 if state.lower() == 'on' else 0
+    pi = pigpio.pi()
+
+    if not pi.connected:
+        exit()
+
+    pi.write(21, isOn)
+    pi.stop()
 
 def rd_data():
-    with open('data.json', 'r') as f:
+    with open(DATA_PATH, 'r') as f:
         data = json.load(f)
     
     return {
@@ -87,7 +123,8 @@ def rd_data():
     }
 
 def wr_data(data):
-    with open('data.json', 'w') as f:
+    with open(DATA_PATH, 'w') as f:
+        print(data, flush=True)
         json.dump(data, f, indent=4) # indent makes it readable
 
 
@@ -98,6 +135,8 @@ def set_data(state, config):
 
     if state == 'IDLE':
         config['status'] = state.lower()
+        print('set to idle logic', flush=True)
+        print(config, flush=True)
         wr_data(config)
     
     
