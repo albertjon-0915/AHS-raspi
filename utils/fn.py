@@ -1,9 +1,12 @@
 from gpiozero import OutputDevice, ButtonBoard, LED
+# from timezonefinder import TimezoneFinder
+from tzfpy import get_tz
+from pathlib import Path
 from time import sleep
+import pytz
 import json
 import pigpio
 import os
-from pathlib import Path
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # DATA_PATH = os.path.join(BASE_DIR, 'data.json')
@@ -47,7 +50,7 @@ def move(axis, steps, delay, isOrigin = False):
     motor = X if axis == 'X' else Y
 
     if steps < 0:
-        print('negative steps', flush=True)
+        # print('negative steps', flush=True)
         if axis == 'X':
             motor[1].off()
         else:
@@ -70,7 +73,7 @@ def move(axis, steps, delay, isOrigin = False):
             if i > 500 and point.is_active: 
                 isStop = True
 
-        print(isStop, flush=True)
+        # print(isStop, flush=True)
         if isStop:
             light('off')
             # print(f"Reached the limit of system's angle...")
@@ -86,7 +89,7 @@ def move(axis, steps, delay, isOrigin = False):
         motor[0].off()
         sleep(delay)
 
-    print(f"Moving {TARGET_ANGLE} degrees...")
+    # print(f"Moving {TARGET_ANGLE} degrees...")
     return f'DONE {axis}'
 
 
@@ -124,7 +127,7 @@ def rd_data():
 
 def wr_data(data):
     with open(DATA_PATH, 'w') as f:
-        print(data, flush=True)
+        # print(data, flush=True)
         json.dump(data, f, indent=4) # indent makes it readable
 
 
@@ -135,11 +138,25 @@ def set_data(state, config):
 
     if state == 'IDLE':
         config['status'] = state.lower()
-        print('set to idle logic', flush=True)
-        print(config, flush=True)
+        # print('set to idle logic', flush=True)
+        # print(config, flush=True)
         wr_data(config)
     
+
+
+def get_utc_from_local(lat, lon, naive_dt):
+    # Note: tzfpy uses (longitude, latitude) order!
+    tz_name = get_tz(lon, lat)
     
+    # 2. Convert the "naive" time (14:30) into that local timezone
+    local_tz = pytz.timezone(tz_name)
+    local_dt = local_tz.localize(naive_dt)
+    
+    # 3. Convert that local time to UTC
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt
+
+
 # NOTE: This is for testing
 # for _ in range(10):
 #     move_motor('X', total_steps, step_delay)

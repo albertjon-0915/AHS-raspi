@@ -16,16 +16,30 @@ def WEBSERVE():
 
 @app.route("/calibrate", methods=['GET', 'POST'])
 def SLR():
-    lat = float(request.values.get('lat', 0.0))
-    lon = float(request.values.get('lon', 0.0))
-    dt = request.values.get('datetime') # format >> "2026-02-07T14:30"
+    json_data = request.get_json(silent=True) or {}
+
+    lat = float(json_data.get('latitude') or request.values.get('latitude', 0.0))
+    lon = float(json_data.get('longitude') or request.values.get('longitude', 0.0))
+    dt = json_data.get('datetime') or request.values.get('datetime')
+    
+    print(f'lat >> {lat}', flush=True)
+    print(f'lon >> {lon}', flush=True)
+    # lat = float(request.values.get('lat', 0.0))
+    # lon = float(request.values.get('lon', 0.0))
+    # dt = request.values.get('datetime') # format >> "2026-02-07T14:30"
+    # print(f'req >> {request.values.get('datetime')}', flush=True)
+    # print(f'date from web >> {dt}', flush=True)
 
     if dt:
         clean_date = datetime.strptime(dt, '%Y-%m-%dT%H:%M')
     else:
         clean_date = datetime.now()
+    
+    date = fn.get_utc_from_local(lat, lon, clean_date)
         
-    date = clean_date.replace(tzinfo=timezone.utc) # format >> should be utc aware for pysolar to accept
+    # date = clean_date.replace(tzinfo=timezone.utc) # format >> should be utc aware for pysolar to accept
+
+    # print(f'date (utc aware) >> {date}', flush=True)
 
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
@@ -44,38 +58,37 @@ def SLR():
         config['elevation'] = 0.0
         fn.set_data('IDLE', config)
     
-    print('initial read config')
-    print(config, flush=True)
+    # print('initial read config')
+    # print(config, flush=True)
 
-    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-        fn.origin()
-        idle()
+    # if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
+    #     fn.origin()
+    #     idle()
     
-    config['status'] = 'pending'
-    config['azimuth'] = data['azimuth']
-    config['elevation'] = data['elevation']
-    fn.set_data('PENDING', config)
+    # config['status'] = 'pending'
+    # config['azimuth'] = data['azimuth']
+    # config['elevation'] = data['elevation']
+    # fn.set_data('PENDING', config)
 
-    print('final config')
-    print(config, flush=True)
+    # print('final config')
+    # print(config, flush=True)
     
-    for key, value in data.items():
-        axis = 'X' if key == 'azimuth' else 'Y'
+    # for key, value in data.items():
+    #     axis = 'X' if key == 'azimuth' else 'Y'
 
-        if key == 'elevation':
-            fn.light('on')
+    #     if key == 'elevation':
+    #         fn.light('on')
 
-        # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
-        # NOTE: change this base on gear ratio of the x and y motor
-        gear_ratio = 15 if key == 'azimuth' else 14
+    #     # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
+    #     # NOTE: change this base on gear ratio of the x and y motor
+    #     gear_ratio = 15 if key == 'azimuth' else 7
 
-        attr = fn.constants(value, gear_ratio) 
-        fn.move(axis, attr['steps'], attr['delay'])
+    #     attr = fn.constants(value, gear_ratio) 
+    #     fn.move(axis, attr['steps'], attr['delay'])
 
-        results.append({"axis": axis, "angle": value, "status": "Moved"})
-        results.append(attr)
+    #     results.append({"axis": axis, "angle": value, "status": "Moved"})
+    #     results.append(attr)
 
-    idle()
     return jsonify(data)
 
 @app.route("/shutdown", methods=['GET', 'POST'])
