@@ -49,14 +49,16 @@ def SLR():
     # print('initial read config')
     # print(config, flush=True)
 
+    fn.check_position()
+
     if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-        fn.origin()
+        fn.origin(config)
         idle()
     
-    # config['status'] = 'pending'
-    # config['azimuth'] = data['azimuth']
-    # config['elevation'] = data['elevation']
-    # fn.set_data('PENDING', config)
+    config['status'] = 'pending'
+    config['azimuth'] = data['azimuth']
+    config['elevation'] = data['elevation']
+    fn.set_data('PENDING', config)
 
     # print('final config')
     # print(config, flush=True)
@@ -81,11 +83,15 @@ def SLR():
 
 @app.route("/shutdown", methods=['GET', 'POST'])
 def SHTDWN():
+    # config = fn.rd_data()
+    # fn.origin(config)
     subprocess.run(['sudo', 'shutdown', '-h', 'now'])
     return "Shutting down..."
 
 @app.route("/reset", methods=['GET', 'POST'])
 def RST():
+    # config = fn.rd_data()
+    # fn.origin(config)
     subprocess.run(['sudo', 'reboot'])
     return "Rebooting..."
 

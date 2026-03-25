@@ -55,20 +55,17 @@ def constants(step = 0, ratio = 1):
         'delay': step_delay
     }
 
-def move(axis, steps, delay, isOrigin = False):
+def move(axis, steps, delay, isCalibration = False):
     motor = X if axis == 'X' else Y
+    direction = 'negative'
 
     if steps < 0:
-        # print('negative steps', flush=True)
-        if axis == 'X':
-            motor[1].off()
-        else:
-            motor[1].on()
+        print('negative steps', flush=True)
+        motor[1].on()
+        direction = 'negative'
     else:
-        if axis == 'X':
-            motor[1].on()
-        else:
-            motor[1].off()
+        motor[1].off()
+        direction = 'positive'
 
         
     steps = abs(steps)
@@ -88,31 +85,87 @@ def move(axis, steps, delay, isOrigin = False):
         #     # print(f"Reached the limit of system's angle...")
         #     break
 
-        if point.is_active: 
-            light('off')
-            print(f"Reached the limit of system's angle...")
-            return f'{i}'
+        if point.is_active:
+                light('off')
+                print(f"Reached the limit of system's angle...")
+                return i
 
-        motor[0].on()
-        sleep(delay)
-        motor[0].off()
-        sleep(delay)
+                # if direction == 'negative':
+                #     motor[1].off()
+                # else:
+                #     motor[1].on()
+
+                # while point.is_active:
+                #     motor[0].on()
+                #     sleep(delay)
+                #     motor[0].off()
+                #     sleep(delay)
+                # return i
+            # if not isCalibration:
+            #     light('off')
+            #     print(f"Reached the limit of system's angle...")
+            #     return i
+            # elif isCalibration and i >= steps // 2:
+            #     light('off')
+            #     print(f"Reached the limit of system's angle...")
+            #     return i
+
+        # motor[0].on()
+        # sleep(delay)
+        # motor[0].off()
+        # sleep(delay)
 
     print(f"Moving {TARGET_ANGLE} degrees...")
-    return f'DONE {axis}'
+    return steps
 
 
-def origin():
+def origin(loaded):
+    # axis = ['Y', 'X']
+    solar = ['azimuth', 'elevation']
+    light('off')
+
+    # for plane in axis:
+    #     gear_ratio = 15 if plane == 'X' else 7
+    #     attr = constants(360, gear_ratio)
+    #     negative_steps = attr['steps'] * -1
+    #     # print('negative_steps', flush=True)
+    #     # print(negative_steps, flush=True)
+    #     move(plane, negative_steps, attr['delay'], True)
+
+    for item in solar:
+        axis = 'X' if item == 'azimuth' else 'Y'
+        gear_ratio = 15 if item == 'azimuth' else 7
+        if loaded[item] > 0:
+            attr = constants(loaded[item], gear_ratio)
+            print(f'{loaded[item]}', flush=True)
+            move(axis, attr['steps']  * -1, attr['delay'], True)
+        
+        # attr = constants(360, gear_ratio)
+        # negative_steps = attr['steps'] * -1
+        # # print('negative_steps', flush=True)
+        # # print(negative_steps, flush=True)
+        # move(plane, negative_steps, attr['delay'], True)
+
+def check_position():
+    pos = 'LEFT'
     axis = ['Y', 'X']
     light('off')
 
+
     for plane in axis:
-        gear_ratio = 15 if plane == 'X' else 14
-        attr = constants(360, gear_ratio)
-        negative_steps = attr['steps'] * -1
-        # print('negative_steps', flush=True)
-        # print(negative_steps, flush=True)
-        move(plane, negative_steps, attr['delay'], True)
+        gear_ratio = 15 if plane == 'X' else 7
+        attr = constants(10, gear_ratio)
+        steps = attr['steps']
+        left = move(plane, steps, attr['delay'], True)
+        sleep(0.5)
+        right = move(plane, steps * -1, attr['delay'], True)
+
+        if int(right) >= int(left):
+            pos = 'RIGHT'
+
+    print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
+    print(f'is in right ?? {pos}', flush=True)
+    return pos
 
 def light(state):
     isOn = 1 if state.lower() == 'on' else 0
@@ -151,7 +204,6 @@ def set_data(state, config):
         # print(config, flush=True)
         wr_data(config)
     
-
 
 # NOTE: This is for testing
 # for _ in range(10):
