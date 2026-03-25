@@ -22,14 +22,6 @@ def SLR():
     lon = float(json_data.get('longitude') or request.values.get('longitude', 0.0))
     dt = json_data.get('datetime') or request.values.get('datetime')
     
-    print(f'lat >> {lat}', flush=True)
-    print(f'lon >> {lon}', flush=True)
-    # lat = float(request.values.get('lat', 0.0))
-    # lon = float(request.values.get('lon', 0.0))
-    # dt = request.values.get('datetime') # format >> "2026-02-07T14:30"
-    # print(f'req >> {request.values.get('datetime')}', flush=True)
-    # print(f'date from web >> {dt}', flush=True)
-
     if dt:
         clean_date = datetime.strptime(dt, '%Y-%m-%dT%H:%M')
     else:
@@ -37,10 +29,6 @@ def SLR():
     
     date = fn.get_utc_from_local(lat, lon, clean_date)
         
-    # date = clean_date.replace(tzinfo=timezone.utc) # format >> should be utc aware for pysolar to accept
-
-    # print(f'date (utc aware) >> {date}', flush=True)
-
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
 
@@ -61,9 +49,9 @@ def SLR():
     # print('initial read config')
     # print(config, flush=True)
 
-    # if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-    #     fn.origin()
-    #     idle()
+    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
+        fn.origin()
+        idle()
     
     # config['status'] = 'pending'
     # config['azimuth'] = data['azimuth']
