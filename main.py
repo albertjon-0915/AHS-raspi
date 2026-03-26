@@ -32,8 +32,25 @@ def SLR():
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
 
+    # The Global Compass Convention (also known as the Navigation Convention)
+    # is the worldwide standard for defining direction.
+    # It treats the horizon as a 360° circle where every number
+    # corresponds to a specific cardinal direction.
+
+    if lat >= 0: 
+        # NORTHERN HEMISPHERE (e.g., Philippines, USA)
+        # Sun path: 90 (E) -> 180 (S) -> 270 (W)
+        # We want:  0 (E)  -> 90 (S)  -> 180 (W)
+        normalize_az = azimuth - 90
+
+    else: 
+        # SOUTHERN HEMISPHERE (e.g., Cape Town)
+        # Sun path: 90 (E) -> 0 (N)  -> 270 (W)
+        # We want:  0 (E)  -> 90 (N) -> 180 (W)
+        normalize_az = (90 - azimuth) % 360
+
     data = {
-        "azimuth":  azimuth,
+        "azimuth":  normalize_az,
         "elevation": altitude,
     }
 
@@ -50,6 +67,7 @@ def SLR():
     # print(config, flush=True)
 
     # fn.check_position()
+
 
     if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
         fn.origin()
