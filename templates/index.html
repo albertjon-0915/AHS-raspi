@@ -1197,8 +1197,6 @@
                         datetime: `${dateVal}T${time24h}`,
                     };
 
-                    console.log();
-
                     const modal = document.getElementById('loadingModal');
                     if (modal) modal.classList.add('active');
 
@@ -1222,8 +1220,8 @@
                         const jsonResp = await res.json();
                         document.getElementById('nav-lat').innerText = parseFloat(data.latitude || 0).toFixed(4);
                         document.getElementById('nav-lon').innerText = parseFloat(data.longitude || 0).toFixed(4);
-                        document.getElementById('nav-date').innerText = data.date;
-                        document.getElementById('nav-time').innerText = data.time;
+                        document.getElementById('nav-date').innerText = dateVal;
+                        document.getElementById('nav-time').innerText = time;
 
                         document.getElementById('disp-azimuth').innerText = jsonResp.azimuth.toFixed(4);
                         document.getElementById('disp-altitude').innerText = jsonResp.elevation.toFixed(4);
