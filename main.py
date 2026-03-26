@@ -49,7 +49,7 @@ def SLR():
     # print('initial read config')
     # print(config, flush=True)
 
-    fn.check_position()
+    # fn.check_position()
 
     if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
         fn.origin()
@@ -69,8 +69,7 @@ def SLR():
         if key == 'elevation':
             fn.light('on')
 
-        # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
-        # NOTE: change this base on gear ratio of the x and y motor
+        # Gear ratio of the x and y motor
         gear_ratio = 15 if key == 'azimuth' else 7
 
         attr = fn.constants(value, gear_ratio) 
@@ -83,15 +82,13 @@ def SLR():
 
 @app.route("/shutdown", methods=['GET', 'POST'])
 def SHTDWN():
-    # config = fn.rd_data()
-    # fn.origin(config)
+    fn.origin()
     subprocess.run(['sudo', 'shutdown', '-h', 'now'])
     return "Shutting down..."
 
 @app.route("/reset", methods=['GET', 'POST'])
 def RST():
-    # config = fn.rd_data()
-    # fn.origin(config)
+    fn.origin()
     subprocess.run(['sudo', 'reboot'])
     return "Rebooting..."
 
