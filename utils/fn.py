@@ -22,7 +22,6 @@ Y = [OutputDevice(23), OutputDevice(24)]
 # x2, y2 >> RIGHT
 LIMIT = ButtonBoard(x1=26, x2=16, y1=19, y2=20, pull_up=False)
 
-TARGET_ANGLE = 0
 
 def get_utc_from_local(lat, lon, naive_dt):
     # Note: tzfpy uses (longitude, latitude) order!
@@ -99,13 +98,11 @@ def move(axis, steps, delay, isHoming = False):
         motor[0].off()
         sleep(delay)
 
-    print(f"Moving {TARGET_ANGLE} degrees...")
     return steps
 
 
 def origin():
     axis = ['Y', 'X']
-    solar = ['azimuth', 'elevation']
     light('off')
 
     for plane in axis:
@@ -116,40 +113,26 @@ def origin():
         # print(negative_steps, flush=True)
         move(plane, negative_steps, attr['delay'], True)
 
-    # for item in solar:
-    #     axis = 'X' if item == 'azimuth' else 'Y'
-    #     gear_ratio = 15 if item == 'azimuth' else 7
-    #     if loaded[item] > 0:
-    #         attr = constants(loaded[item], gear_ratio)
-    #         print(f'{loaded[item]}', flush=True)
-    #         move(axis, attr['steps']  * -1, attr['delay'], True)
-        
-        # attr = constants(360, gear_ratio)
-        # negative_steps = attr['steps'] * -1
-        # # print('negative_steps', flush=True)
-        # # print(negative_steps, flush=True)
-        # move(plane, negative_steps, attr['delay'], True)
-
-# def check_position():
-#     pos = 'LEFT'
-#     axis = ['Y', 'X']
-#     light('off')
+def check_position():
+    pos = 'LEFT'
+    axis = ['Y', 'X']
+    light('off')
 
 
-#     for plane in axis:
-#         gear_ratio = 15 if plane == 'X' else 7
-#         attr = constants(10, gear_ratio)
-#         steps = attr['steps']
-#         left = move(plane, steps, attr['delay'], True)
-#         sleep(0.5)
-#         right = move(plane, steps * -1, attr['delay'], True)
+    for plane in axis:
+        gear_ratio = 15 if plane == 'X' else 7
+        attr = constants(10, gear_ratio)
+        steps = attr['steps']
+        left = move(plane, steps, attr['delay'], True)
+        sleep(0.5)
+        right = move(plane, steps * -1, attr['delay'], True)
 
-#         if int(right) >= int(left):
-#             pos = 'RIGHT'
+        if int(right) >= int(left):
+            pos = 'RIGHT'
 
-#     print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
-#     print(f'is in right ?? {pos}', flush=True)
-#     return pos
+    print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
+    print(f'is in right ?? {pos}', flush=True)
+    return pos
 
 def light(state):
     isOn = 1 if state.lower() == 'on' else 0
@@ -173,7 +156,6 @@ def rd_data():
 
 def wr_data(data):
     with open(DATA_PATH, 'w') as f:
-        # print(data, flush=True)
         json.dump(data, f, indent=4) # indent makes it readable
 
 
@@ -184,15 +166,5 @@ def set_data(state, config):
 
     if state == 'IDLE':
         config['status'] = state.lower()
-        # print('set to idle logic', flush=True)
-        # print(config, flush=True)
         wr_data(config)
-    
-
-# NOTE: This is for testing
-# for _ in range(10):
-#     move_motor('X', total_steps, step_delay)
-#     move_motor('Y', total_steps, step_delay)
-#     sleep(2)
-
     
