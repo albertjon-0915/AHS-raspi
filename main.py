@@ -52,7 +52,7 @@ def SLR():
     fn.check_position()
 
     if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-        fn.origin(config)
+        fn.origin()
         idle()
     
     config['status'] = 'pending'
@@ -63,21 +63,21 @@ def SLR():
     # print('final config')
     # print(config, flush=True)
     
-    # for key, value in data.items():
-    #     axis = 'X' if key == 'azimuth' else 'Y'
+    for key, value in data.items():
+        axis = 'X' if key == 'azimuth' else 'Y'
 
-    #     if key == 'elevation':
-    #         fn.light('on')
+        if key == 'elevation':
+            fn.light('on')
 
-    #     # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
-    #     # NOTE: change this base on gear ratio of the x and y motor
-    #     gear_ratio = 15 if key == 'azimuth' else 7
+        # NOTE: change gear ratio base on the actual ratio of ark/planetary gear
+        # NOTE: change this base on gear ratio of the x and y motor
+        gear_ratio = 15 if key == 'azimuth' else 7
 
-    #     attr = fn.constants(value, gear_ratio) 
-    #     fn.move(axis, attr['steps'], attr['delay'])
+        attr = fn.constants(value, gear_ratio) 
+        fn.move(axis, attr['steps'], attr['delay'])
 
-    #     results.append({"axis": axis, "angle": value, "status": "Moved"})
-    #     results.append(attr)
+        results.append({"axis": axis, "angle": value, "status": "Moved"})
+        results.append(attr)
 
     return jsonify(data)
 

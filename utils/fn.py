@@ -18,7 +18,9 @@ X = [OutputDevice(17), OutputDevice(27)]
 Y = [OutputDevice(23), OutputDevice(24)]
 
 # Pins: x=azimuth, y=elevation
-LIMIT = ButtonBoard(x=16, y=20, pull_up=False)
+# x1, y1 >> LEFT
+# x2, y2 >> RIGHT
+LIMIT = ButtonBoard(x1=26, x2=16, y1=19, y2=20, pull_up=False)
 
 TARGET_ANGLE = 0
 
@@ -55,90 +57,72 @@ def constants(step = 0, ratio = 1):
         'delay': step_delay
     }
 
-def move(axis, steps, delay, isCalibration = False):
+def move(axis, steps, delay, isHoming = False):
     motor = X if axis == 'X' else Y
-    direction = 'negative'
 
     if steps < 0:
         print('negative steps', flush=True)
         motor[1].on()
-        direction = 'negative'
     else:
         motor[1].off()
-        direction = 'positive'
 
-        
+    # if not isHoming and steps < 0:
+    #     steps = max(0, steps)
+
+    init_p1 = getattr(LIMIT, f'{axis.lower()}1').is_active
+
     steps = abs(steps)
     for i in range(steps):
-        point = getattr(LIMIT, axis.lower())
+        p1 = getattr(LIMIT, f'{axis.lower()}1')
+        p2 = getattr(LIMIT, f'{axis.lower()}2')
 
-        # isStop = False
-        # if not isOrigin:
-        #     isStop = point.is_active
-        # else:
-        #     if i > 500 and point.is_active: 
-        #         isStop = True
-
-        # print(isStop, flush=True)
-        # if isStop:
-        #     light('off')
-        #     # print(f"Reached the limit of system's angle...")
-        #     break
-
-        if point.is_active:
+        if isHoming:
+            if p1.is_active:
                 light('off')
-                print(f"Reached the limit of system's angle...")
+                print('Homing complete...')
                 return i
+        else:
+            if p2.is_active:
+                light('off')
+                print("Reached the limit of system's angle...")
+                return i
+            
+            if not init_p1 and p1.is_active:
+                light('off')
+                return i
+        
+        if not p1.is_active:
+            init_p1 = False
 
-                # if direction == 'negative':
-                #     motor[1].off()
-                # else:
-                #     motor[1].on()
-
-                # while point.is_active:
-                #     motor[0].on()
-                #     sleep(delay)
-                #     motor[0].off()
-                #     sleep(delay)
-                # return i
-            # if not isCalibration:
-            #     light('off')
-            #     print(f"Reached the limit of system's angle...")
-            #     return i
-            # elif isCalibration and i >= steps // 2:
-            #     light('off')
-            #     print(f"Reached the limit of system's angle...")
-            #     return i
-
-        # motor[0].on()
-        # sleep(delay)
-        # motor[0].off()
-        # sleep(delay)
+        motor[0].on()
+        sleep(delay)
+        motor[0].off()
+        sleep(delay)
 
     print(f"Moving {TARGET_ANGLE} degrees...")
     return steps
 
 
-def origin(loaded):
-    # axis = ['Y', 'X']
+def origin():
+    axis = ['Y', 'X']
     solar = ['azimuth', 'elevation']
     light('off')
 
-    # for plane in axis:
-    #     gear_ratio = 15 if plane == 'X' else 7
-    #     attr = constants(360, gear_ratio)
-    #     negative_steps = attr['steps'] * -1
-    #     # print('negative_steps', flush=True)
-    #     # print(negative_steps, flush=True)
-    #     move(plane, negative_steps, attr['delay'], True)
+    for plane in axis:
+        gear_ratio = 15 if plane == 'X' else 7
+        attr = constants(360, gear_ratio)
+        negative_steps = attr['steps'] * -1
+        # print('negative_steps', flush=True)
+        # print(negative_steps, flush=True)
+        move(plane, negative_steps, attr['delay'], True)
 
-    for item in solar:
-        axis = 'X' if item == 'azimuth' else 'Y'
-        gear_ratio = 15 if item == 'azimuth' else 7
-        if loaded[item] > 0:
-            attr = constants(loaded[item], gear_ratio)
-            print(f'{loaded[item]}', flush=True)
-            move(axis, attr['steps']  * -1, attr['delay'], True)
+    # for item in solar:
+    #     axis = 'X' if item == 'azimuth' else 'Y'
+    #     gear_ratio = 15 if item == 'azimuth' else 7
+    #     if loaded[item] > 0:
+    #         attr = constants(loaded[item], gear_ratio)
+    #         print(f'{loaded[item]}', flush=True)
+    #         move(axis, attr['steps']  * -1, attr['delay'], True)
         
         # attr = constants(360, gear_ratio)
         # negative_steps = attr['steps'] * -1
@@ -146,26 +130,26 @@ def origin(loaded):
         # # print(negative_steps, flush=True)
         # move(plane, negative_steps, attr['delay'], True)
 
-def check_position():
-    pos = 'LEFT'
-    axis = ['Y', 'X']
-    light('off')
+# def check_position():
+#     pos = 'LEFT'
+#     axis = ['Y', 'X']
+#     light('off')
 
 
-    for plane in axis:
-        gear_ratio = 15 if plane == 'X' else 7
-        attr = constants(10, gear_ratio)
-        steps = attr['steps']
-        left = move(plane, steps, attr['delay'], True)
-        sleep(0.5)
-        right = move(plane, steps * -1, attr['delay'], True)
+#     for plane in axis:
+#         gear_ratio = 15 if plane == 'X' else 7
+#         attr = constants(10, gear_ratio)
+#         steps = attr['steps']
+#         left = move(plane, steps, attr['delay'], True)
+#         sleep(0.5)
+#         right = move(plane, steps * -1, attr['delay'], True)
 
-        if int(right) >= int(left):
-            pos = 'RIGHT'
+#         if int(right) >= int(left):
+#             pos = 'RIGHT'
 
-    print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
-    print(f'is in right ?? {pos}', flush=True)
-    return pos
+#     print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
+#     print(f'is in right ?? {pos}', flush=True)
+#     return pos
 
 def light(state):
     isOn = 1 if state.lower() == 'on' else 0
