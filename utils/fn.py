@@ -70,8 +70,8 @@ def move(axis, steps, delay, isHoming = False):
 
     init_p1 = getattr(LIMIT, f'{axis.lower()}1').is_active
 
-    steps = abs(steps)
-    for i in range(steps):
+    normalized_steps = abs(steps)
+    for i in range(normalized_steps):
         p1 = getattr(LIMIT, f'{axis.lower()}1')
         p2 = getattr(LIMIT, f'{axis.lower()}2')
 
@@ -81,17 +81,26 @@ def move(axis, steps, delay, isHoming = False):
                 print('Homing complete...')
                 return i
         else:
-            if p2.is_active:
+            # STOP if moving negative (left/down) and hit home limit
+            if steps < 0 and p1.is_active:
                 light('off')
-                print("Reached the limit of system's angle...")
+                print("Already at home/left-most side...")
                 return i
             
-            if not init_p1 and p1.is_active:
+            # STOP if moving positive (right/up) and hit far limit
+            if steps > 0 and p2.is_active:
                 light('off')
+                print("Reached the far limit...")
                 return i
+            
+
+            # # This handles the 'bounce' or accidental reversal
+            # if not init_p1 and p1.is_active:
+            #     light('off')
+            #     return i
         
-        if not p1.is_active:
-            init_p1 = False
+        # if not p1.is_active or steps < 0:
+        #     init_p1 = False
 
         motor[0].on()
         sleep(delay)
