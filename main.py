@@ -3,11 +3,8 @@ import subprocess
 from datetime import datetime, timezone
 from pysolar.solar import get_azimuth, get_altitude
 from utils import fn
-# import Rpi.GPIO as GPIO
 
 app = Flask(__name__)
-# Tell Flask to look in 'my_pages' instead of 'templates'
-# app = Flask(__name__, template_folder='folder path')
 
 # This route serves your HTML page
 @app.route('/')
