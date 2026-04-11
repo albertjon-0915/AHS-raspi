@@ -984,6 +984,12 @@
                 
                 const display = document.getElementById('numpadDisplayValue');
                 if(display) display.innerText = "";
+                
+                fetch('/reinit', {
+                    method: 'GET',
+                    headers: {'Content-Type': 'application/json'},
+                }).then(async res => {console.log(res)})
+                .catch(err => console.log("Backend offline (simulation mode)"));
             }
 
             // --- Numpad Logic ---

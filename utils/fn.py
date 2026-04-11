@@ -60,13 +60,10 @@ def move(axis, steps, delay, isHoming = False):
     motor = X if axis == 'X' else Y
 
     if steps < 0:
-        print('negative steps', flush=True)
         motor[1].on()
     else:
         motor[1].off()
-
-    # if not isHoming and steps < 0:
-    #     steps = max(0, steps)
+    
 
     init_p1 = getattr(LIMIT, f'{axis.lower()}1').is_active
 
@@ -92,15 +89,6 @@ def move(axis, steps, delay, isHoming = False):
                 light('off')
                 print("Reached the far limit...")
                 return i
-            
-
-            # # This handles the 'bounce' or accidental reversal
-            # if not init_p1 and p1.is_active:
-            #     light('off')
-            #     return i
-        
-        # if not p1.is_active or steps < 0:
-        #     init_p1 = False
 
         motor[0].on()
         sleep(delay)
@@ -112,14 +100,13 @@ def move(axis, steps, delay, isHoming = False):
 
 def origin():
     axis = ['Y', 'X']
+    # axis = ['Y']
     light('off')
 
     for plane in axis:
-        gear_ratio = 15 if plane == 'X' else 7
+        gear_ratio = 15 if plane == 'X' else 9.8
         attr = constants(360, gear_ratio)
         negative_steps = attr['steps'] * -1
-        # print('negative_steps', flush=True)
-        # print(negative_steps, flush=True)
         move(plane, negative_steps, attr['delay'], True)
 
 def check_position():
@@ -129,7 +116,7 @@ def check_position():
 
 
     for plane in axis:
-        gear_ratio = 15 if plane == 'X' else 7
+        gear_ratio = 15 if plane == 'X' else 19.6
         attr = constants(10, gear_ratio)
         steps = attr['steps']
         left = move(plane, steps, attr['delay'], True)
@@ -139,8 +126,8 @@ def check_position():
         if int(right) >= int(left):
             pos = 'RIGHT'
 
-    print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
-    print(f'is in right ?? {pos}', flush=True)
+    # print(f"{'move towards left' if pos == 'RIGHT' else 'already on the left'}", flush=True)
+    # print(f'is in right ?? {pos}', flush=True)
     return pos
 
 def light(state):
