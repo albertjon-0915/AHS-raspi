@@ -6,7 +6,9 @@ import pytz
 import json
 import pigpio
 import os
-
+from astral import LocationInfo
+from astral.sun import sun
+import datetime
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # DATA_PATH = os.path.join(BASE_DIR, 'data.json')
@@ -34,6 +36,33 @@ def get_utc_from_local(lat, lon, naive_dt):
     # Convert that local time to UTC
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt
+
+
+def get_sunrise_sunset_azimuth(lat, lon):
+    # Note: tzfpy uses (longitude, latitude) order!
+    tz_name = get_tz(lon, lat)
+    
+    # Convert the "naive" time (14:30) into that local timezone
+    local_tz = pytz.timezone(tz_name)
+    now = datetime.datetime.now(local_tz)
+
+    city = LocationInfo("Dynamic City", "Region", tz_name, lat, lon)
+    s = sun(city.observer, date=now, tzinfo=local_tz)
+    sunrise = s['sunrise']
+    sunset = s['sunset']
+    
+    # 3. Calculate Horizontal Position (The X-Axis / Progress)
+    total_daylight_seconds = (sunset - sunrise).total_seconds()
+    elapsed_seconds = (now - sunrise).total_seconds()
+
+    # Calculate percentage of day completed (0.0 to 1.0)
+    # clamp to 0 and 1 so the sun doesn't move off screen at night
+    day_progress = max(0.0, min(1.0, elapsed_seconds / total_daylight_seconds))
+
+    # Map to a 180-degree arc for your 2D drawing (Left to Right)
+    x_arc_position = day_progress * 180  
+
+    return x_arc_position
 
 def constants(step = 0, ratio = 1):
     # Motor Specs
