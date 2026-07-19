@@ -56,41 +56,41 @@ def SLR():
     results = []
     config = fn.rd_data()
 
-    def idle():
-        config['status'] = 'idle'
-        config['azimuth'] = 0.0
-        config['elevation'] = 0.0
-        fn.set_data('IDLE', config)
+    # def idle():
+    #     config['status'] = 'idle'
+    #     config['azimuth'] = 0.0
+    #     config['elevation'] = 0.0
+    #     fn.set_data('IDLE', config)
     
-    # fn.check_position()
+    # # fn.check_position()
 
 
-    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-        fn.origin()
-        idle()
+    # if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
+    #     fn.origin()
+    #     idle()
     
-    config['status'] = 'pending'
-    config['azimuth'] = data['azimuth']
-    config['elevation'] = data['elevation']
-    fn.set_data('PENDING', config)
+    # config['status'] = 'pending'
+    # config['azimuth'] = data['azimuth']
+    # config['elevation'] = data['elevation']
+    # fn.set_data('PENDING', config)
 
-    for key, value in data.items():
-        axis = 'X' if key == 'azimuth' else 'Y'
+    # for key, value in data.items():
+    #     axis = 'X' if key == 'azimuth' else 'Y'
 
-        if key == 'elevation':
-            fn.light('on')
+    #     if key == 'elevation':
+    #         fn.light('on')
 
-        # Gear ratio of the x and y motor
-        gear_ratio = 15 if key == 'azimuth' else 19.6
-        deg_in_step = (value -  10) if key == 'azimuth' else value
+    #     # Gear ratio of the x and y motor
+    #     gear_ratio = 15 if key == 'azimuth' else 19.6
+    #     deg_in_step = (value -  10) if key == 'azimuth' else value
 
-        attr = fn.constants(deg_in_step, gear_ratio) 
+    #     attr = fn.constants(deg_in_step, gear_ratio) 
 
-        # attr = fn.constants(-20, gear_ratio) >> test
-        fn.move(axis, attr['steps'], attr['delay'])
+    #     # attr = fn.constants(-20, gear_ratio) >> test
+    #     fn.move(axis, attr['steps'], attr['delay'])
 
-        results.append({"axis": axis, "angle": value, "status": "Moved"})
-        results.append(attr)
+    #     results.append({"axis": axis, "angle": value, "status": "Moved"})
+    #     results.append(attr)
 
     return jsonify({'azimuth': azimuth, 'elevation': altitude })
 
