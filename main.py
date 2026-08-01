@@ -28,12 +28,12 @@ def SLR():
         
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
-
+    get_az = fn.get_sunrise_sunset_azimuth(lat, lon, date)
     # The Global Compass Convention (also known as the Navigation Convention)
     # is the worldwide standard for defining direction.
     # It treats the horizon as a 360° circle where every number
     # corresponds to a specific cardinal direction.
-
+    
     if lat >= 0: 
         # NORTHERN HEMISPHERE (e.g., Philippines, USA)
         # Sun path: 90 (E) -> 180 (S) -> 270 (W)
@@ -49,49 +49,42 @@ def SLR():
         normalize_el = altitude
 
     data = {
-        "azimuth":  normalize_az,
+        "azimuth":  get_az,
         "elevation": normalize_el,
     }
-
+    new_test = fn.calculate_heliodon_angles(azimuth, altitude)
+    print(f'new implementation vs current>> {new_test} {data}', flush=True)
+    print(f'is astral / pysolar same?? {get_az['motor_x']} {normalize_az}', flush=True)
     results = []
     config = fn.rd_data()
-
-    # def idle():
-    #     config['status'] = 'idle'
-    #     config['azimuth'] = 0.0
-    #     config['elevation'] = 0.0
-    #     fn.set_data('IDLE', config)
+    def idle():
+        config['status'] = 'idle'
+        config['azimuth'] = 0.0
+        config['elevation'] = 0.0
+        fn.set_data('IDLE', config)
     
-    # # fn.check_position()
-
-
-    # if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
-    #     fn.origin()
-    #     idle()
+    # fn.check_position()
+    if config['status'] == 'pending' or config['azimuth'] > 0 or config['elevation'] > 0:
+        fn.origin()
+        idle()
     
-    # config['status'] = 'pending'
-    # config['azimuth'] = data['azimuth']
-    # config['elevation'] = data['elevation']
-    # fn.set_data('PENDING', config)
+    config['status'] = 'pending'
+    config['azimuth'] = data['azimuth']
+    config['elevation'] = data['elevation']
+    fn.set_data('PENDING', config)
 
-    # for key, value in data.items():
-    #     axis = 'X' if key == 'azimuth' else 'Y'
-
-    #     if key == 'elevation':
-    #         fn.light('on')
-
-    #     # Gear ratio of the x and y motor
-    #     gear_ratio = 15 if key == 'azimuth' else 19.6
-    #     deg_in_step = (value -  10) if key == 'azimuth' else value
-
-    #     attr = fn.constants(deg_in_step, gear_ratio) 
-
-    #     # attr = fn.constants(-20, gear_ratio) >> test
-    #     fn.move(axis, attr['steps'], attr['delay'])
-
-    #     results.append({"axis": axis, "angle": value, "status": "Moved"})
-    #     results.append(attr)
-
+    for key, value in data.items():
+        axis = 'X' if key == 'azimuth' else 'Y'
+        if key == 'elevation':
+            fn.light('on')
+        # Gear ratio of the x and y motor
+        gear_ratio = 15 if key == 'azimuth' else 19.6
+        deg_in_step = (value -  10) if key == 'azimuth' else value
+        attr = fn.constants(deg_in_step, gear_ratio) 
+        # attr = fn.constants(-20, gear_ratio) >> test
+        # fn.move(axis, attr['steps'], attr['delay'])
+        # results.append({"axis": axis, "angle": value, "status": "Moved"})
+        # results.append(attr)
     return jsonify({'azimuth': azimuth, 'elevation': altitude })
 
 @app.route("/shutdown", methods=['GET', 'POST'])
