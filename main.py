@@ -25,36 +25,18 @@ def SLR():
         clean_date = datetime.now()
     
     date = fn.get_utc_from_local(lat, lon, clean_date)
-        
+
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
-    get_az = fn.get_sunrise_sunset_azimuth(lat, lon, date)
-    # The Global Compass Convention (also known as the Navigation Convention)
-    # is the worldwide standard for defining direction.
-    # It treats the horizon as a 360° circle where every number
-    # corresponds to a specific cardinal direction.
-    
-    if lat >= 0: 
-        # NORTHERN HEMISPHERE (e.g., Philippines, USA)
-        # Sun path: 90 (E) -> 180 (S) -> 270 (W)
-        # We want:  0 (E)  -> 90 (S)  -> 180 (W)
-        normalize_az = azimuth - 90
-        normalize_el = 180 - altitude
 
-    else: 
-        # SOUTHERN HEMISPHERE (e.g., Cape Town)
-        # Sun path: 90 (E) -> 0 (N)  -> 270 (W)
-        # We want:  0 (E)  -> 90 (N) -> 180 (W)
-        normalize_az = (90 - azimuth) % 360
-        normalize_el = altitude
+    # Sole source of truth for both motors: projects 3D solar azimuth/altitude
+    # onto the 2D heliodon's 0-180 (X) / 0-90 (Y) physical arcs.
+    motor_angles = fn.calculate_heliodon_angles(azimuth, altitude)
 
     data = {
-        "azimuth":  get_az,
-        "elevation": normalize_el,
+        "azimuth": motor_angles['motor_x'],
+        "elevation": motor_angles['motor_y'],
     }
-    new_test = fn.calculate_heliodon_angles(azimuth, altitude)
-    print(f'new implementation vs current>> {new_test} {data}', flush=True)
-    print(f'is astral / pysolar same?? {get_az['motor_x']} {normalize_az}', flush=True)
     results = []
     config = fn.rd_data()
     def idle():
@@ -78,9 +60,9 @@ def SLR():
         if key == 'elevation':
             fn.light('on')
         # Gear ratio of the x and y motor
-        gear_ratio = 15 if key == 'azimuth' else 19.6
-        deg_in_step = (value -  10) if key == 'azimuth' else value
-        attr = fn.constants(deg_in_step, gear_ratio) 
+        gear_ratio = fn.AZIMUTH_GEAR_RATIO if key == 'azimuth' else fn.ELEVATION_GEAR_RATIO
+        deg_in_step = (value - fn.AZIMUTH_ARC_TRIM_DEG) if key == 'azimuth' else value
+        attr = fn.constants(deg_in_step, gear_ratio)
         # attr = fn.constants(-20, gear_ratio) >> test
         # fn.move(axis, attr['steps'], attr['delay'])
         # results.append({"axis": axis, "angle": value, "status": "Moved"})
