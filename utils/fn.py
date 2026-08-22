@@ -53,11 +53,12 @@ def calculate_heliodon_angles(azimuth_deg, altitude_deg):
 
     # Convert to radians
     az_rad = math.radians(azimuth_deg)
-    alt_rad = math.radians(safe_altitude)
 
-    # 1. X-Vector: East/West projection modulated by solar elevation tilt
-    # Output range: -1.0 (West) to +1.0 (East)
-    x_vec = math.cos(alt_rad) * math.sin(az_rad)
+    # 1. X-Vector: East/West azimuth projection (no elevation coupling).
+    #    Removed the cos(altitude) factor: it compressed the azimuth axis
+    #    toward center as the sun climbed, causing up to ~49 deg of pointing
+    #    error. Output range: -1.0 (West) to +1.0 (East)
+    x_vec = math.sin(az_rad)
 
     # 2. Map -1.0..+1.0 directly onto a 0°..180° motor arc
     motor_x = (x_vec + 1.0) * 90.0
