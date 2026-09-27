@@ -64,7 +64,7 @@ def SLR():
         deg_in_step = (value - fn.AZIMUTH_ARC_TRIM_DEG) if key == 'azimuth' else value
         attr = fn.constants(deg_in_step, gear_ratio)
         # attr = fn.constants(-20, gear_ratio) >> test
-        # fn.move(axis, attr['steps'], attr['delay'])
+        fn.move(axis, attr['steps'], attr['delay'])
         # results.append({"axis": axis, "angle": value, "status": "Moved"})
         # results.append(attr)
     return jsonify({'azimuth': azimuth, 'elevation': altitude })
