@@ -47,28 +47,36 @@ def get_utc_from_local(lat, lon, naive_dt):
 def calculate_heliodon_angles(azimuth_deg, altitude_deg):
     """
     Projects 3D solar angles onto a 2D Heliodon (0-180 degree arc).
+    X Motor (motor_x) is carriage angle: 0 = East horizon, 90 = Zenith, 180 = West horizon.
+    Y Motor (motor_y) is arch tilt: 0 = South horizon, 90 = Zenith, 180 = North horizon.
     """
-    # Clamp altitude to the physical 0-90 degree elevation arm range
+    # Clamp altitude to 0-90 degrees to ensure the sun is above horizon
     safe_altitude = max(0.0, min(90.0, altitude_deg))
 
     # Convert to radians
     az_rad = math.radians(azimuth_deg)
+    alt_rad = math.radians(safe_altitude)
 
-    # 1. X-Vector: East/West azimuth projection (no elevation coupling).
-    #    Removed the cos(altitude) factor: it compressed the azimuth axis
-    #    toward center as the sun climbed, causing up to ~49 deg of pointing
-    #    error. Output range: -1.0 (West) to +1.0 (East)
-    x_vec = math.sin(az_rad)
+    # x_sun is the East component of the sun's position
+    x_sun = math.cos(alt_rad) * math.sin(az_rad)
+    x_sun = max(-1.0, min(1.0, x_sun))  # Clamp to avoid rounding domain errors
 
-    # 2. Map -1.0..+1.0 directly onto a 0°..180° motor arc
-    motor_x = (x_vec + 1.0) * 90.0
+    # Calculate carriage angle (X) along the arch
+    theta = math.degrees(math.acos(x_sun))
 
-    # 3. Y-Axis: Direct Elevation Angle (0° = Horizon, 90° = Overhead)
-    motor_y = safe_altitude
+    # Calculate arch tilt (Y) from South (0) to North (180)
+    # y_sun is North component. Since we measure from South (0), we negate it.
+    y_val = -math.cos(alt_rad) * math.cos(az_rad)
+    z_val = math.sin(alt_rad)
+    
+    phi = math.degrees(math.atan2(z_val, y_val))
+    phi = phi % 360
+    if phi > 180:
+        phi = 180.0
 
     return {
-        "motor_x": round(motor_x, 2),
-        "motor_y": round(motor_y, 2)
+        "motor_x": round(theta, 2),
+        "motor_y": round(phi, 2)
     }
 
 def constants(step = 0, ratio = 1):
