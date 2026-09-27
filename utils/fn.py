@@ -64,9 +64,8 @@ def calculate_heliodon_angles(azimuth_deg, altitude_deg):
     # Calculate carriage angle (X) along the arch
     theta = math.degrees(math.acos(x_sun))
 
-    # Calculate arch tilt (Y) from South (0) to North (180)
-    # y_sun is North component. Since we measure from South (0), we negate it.
-    y_val = -math.cos(alt_rad) * math.cos(az_rad)
+    # Calculate arch tilt (Y) from North (0) to South (180)
+    y_val = math.cos(alt_rad) * math.cos(az_rad)
     z_val = math.sin(alt_rad)
     
     phi = math.degrees(math.atan2(z_val, y_val))
