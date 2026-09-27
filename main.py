@@ -29,7 +29,7 @@ def SLR():
     azimuth = get_azimuth(lat, lon, date)
     altitude = get_altitude(lat, lon, date)
 
-    # Sole source of truth for both motors: projects 3D solar azimuth/altitude
+    # projects 3D solar azimuth/altitude
     # onto the 2D heliodon's 0-180 (X) / 0-90 (Y) physical arcs.
     motor_angles = fn.calculate_heliodon_angles(azimuth, altitude)
 
@@ -57,14 +57,16 @@ def SLR():
 
     for key, value in data.items():
         axis = 'X' if key == 'azimuth' else 'Y'
+        
         if key == 'elevation':
             fn.light('on')
+        
         # Gear ratio of the x and y motor
         gear_ratio = fn.AZIMUTH_GEAR_RATIO if key == 'azimuth' else fn.ELEVATION_GEAR_RATIO
         deg_in_step = (value - fn.AZIMUTH_ARC_TRIM_DEG) if key == 'azimuth' else value
         attr = fn.constants(deg_in_step, gear_ratio)
-        # attr = fn.constants(-20, gear_ratio) >> test
         fn.move(axis, attr['steps'], attr['delay'])
+        
         # results.append({"axis": axis, "angle": value, "status": "Moved"})
         # results.append(attr)
     return jsonify({'azimuth': azimuth, 'elevation': altitude })
