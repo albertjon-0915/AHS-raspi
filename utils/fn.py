@@ -25,7 +25,7 @@ LIMIT = ButtonBoard(x1=26, x2=16, y1=19, y2=20, pull_up=False)
 # Gear ratios for the X (azimuth) and Y (elevation) stepper motors
 AZIMUTH_GEAR_RATIO = 15
 ELEVATION_GEAR_RATIO = 19.6
-n# Night threshold: sun not visible below this
+# Night threshold: sun not visible below this
 NIGHT_ANGLE_THRESHOLD = -2.0
 
 # Mechanical trim: the physical azimuth arc has its own ~10 degree limitation,
