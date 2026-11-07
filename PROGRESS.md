@@ -20,7 +20,9 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
 - [ ] Repeated Flask restarts do not hit `GPIO busy` (one clean restart passed the test below; repeated restarts not yet tested)
 - [ ] Flask runs as a systemd service (starts on boot)
 - [ ] Kiosk Chromium shows the page on boot
-- [ ] Night behavior: motors go home when sun altitude < -2 (code exists, not tested on hardware)
+- [ ] Night behavior: motors go home when sun altitude < -2 (home position confirmed in software; physical motion not yet checked)
+- [x] LED off at night, on page load, and at app startup (pin readback verified 2026-11-07; physical LED not yet checked)
+- [ ] Physical check: LED on the heliodon matches the pin readback above
 - [ ] Motor mapping: confirm the "middle of arc" result is wrong and find the fix (not resolved)
 
 ## Known issues
@@ -57,6 +59,19 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
 - Motor targets are computed values, not measured. Physical arm movement still needs to be confirmed on the kiosk.
 - Y targets for these morning times sit at 120–128, so the middle-of-arc issue is still open.
 
+### 2026-11-07: LED behavior (commit `705b798`, pin 21 read via pigpio)
+
+| Step | LED pin (1 = on) |
+|---|---|
+| Before restart (old code, LED left on) | 1 |
+| After Flask starts (new code) | 0 |
+| After loading `/` (kiosk startup) | 0 |
+| After night calibrate (03:00) | 0 |
+| After daytime calibrate (10:27) | 1 (intended) |
+
+- Flask log: 0 `GPIO busy` or traceback errors.
+- Known side effect: reloading the page during the day turns the LED off.
+
 ## Session log
 
 ### 2026-11-07
@@ -64,4 +79,5 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
 - Fixed the stray `n` before a comment in `utils/fn.py` (now fixed on this branch).
 - Earlier I suspected a pysolar caching bug. That was not confirmed: after restarting Flask, values varied by place and time as expected. The root cause of the earlier identical results is still unknown.
 - pysolar needs timezone-aware datetimes. `get_utc_from_local` in `fn.py` provides them.
+- LED was on at night, on page load, and at startup. Cause: `pigpiod` keeps the pin level between client connections, and night calibrate never turned it off. Fixed in `main.py` (`705b798`).
 - During debugging, `pkill -9 -f python` was run on the Pi. That may have stopped unrelated Python processes too (for example `wayvnc-control.py`). Check that VNC still works.
