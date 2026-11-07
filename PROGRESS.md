@@ -17,7 +17,7 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
   - Manila 14.6, 120.97 at 08:27: az 121.10, el 33.33
   - NYC 40.71, -74.00 at 12:00: az 185.79, el 32.69
 - [ ] Motors physically move to the expected positions (not verified)
-- [ ] Repeated Flask restarts do not hit `GPIO busy`
+- [ ] Repeated Flask restarts do not hit `GPIO busy` (one clean restart passed the test below; repeated restarts not yet tested)
 - [ ] Flask runs as a systemd service (starts on boot)
 - [ ] Kiosk Chromium shows the page on boot
 - [ ] Night behavior: motors go home when sun altitude < -2 (code exists, not tested on hardware)
@@ -41,6 +41,21 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
 
 ### 4. Runtime state in git
 - `data.json` is runtime state. It was reset to `idle` on the Pi. Do not commit changes to it unless that is intended.
+
+## Test results
+
+### 2026-11-07: `/calibrate` sequence (Manila 14.6, 120.97), one Flask process
+
+| Time | HTTP | Seconds | Sun az / el | Motor X / Y target (data.json) |
+|---|---|---|---|---|
+| 08:27 | 200 | 38 | 121.10 / 33.33 | 44.32 / 128.15 |
+| 10:27 | 200 | 33 | 149.09 / 54.32 | 72.57 / 121.64 |
+| 11:27 | 200 | 34 | 174.05 / 58.99 | 86.94 / 120.87 |
+| 03:00 | 200 | 18 | 98.78 / -41.82 | 0 / 0 (night, home) |
+
+- Flask log: 0 `GPIO busy` or traceback errors.
+- Motor targets are computed values, not measured. Physical arm movement still needs to be confirmed on the kiosk.
+- Y targets for these morning times sit at 120–128, so the middle-of-arc issue is still open.
 
 ## Session log
 
