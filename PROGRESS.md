@@ -72,6 +72,30 @@ Pi: `jaekylee@192.168.1.159`, app path `/home/jaekylee/Desktop/heliodon/service`
 - Flask log: 0 `GPIO busy` or traceback errors.
 - Known side effect: reloading the page during the day turns the LED off.
 
+### 2026-11-07: random location and time check (10 cases, seed 20261107)
+
+Reference: NOAA solar position (no refraction) plus the `fn.py` projection, computed off the Pi. Timezone from the Pi's `tzfpy`. 5 daytime and 5 night cases were picked from the random pool (the raw draw was 8 night, 2 day).
+
+| id | Local time | Sun alt (ref / Pi) | Motor X (ref / Pi) | Motor Y (ref / Pi) | LED (ref / Pi) |
+|---|---|---|---|---|---|
+| 1 | 2026-01-18 04:46 | -22.18 / -22.17 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 2 | 2026-03-19 06:25 | -2.01 / -2.02 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 3 | 2026-04-06 10:10 | 29.82 / 29.85 | 56.89 / 56.91 | 36.42 / 36.45 | 1 / 1 |
+| 4 | 2026-04-22 22:04 | -46.95 / -46.95 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 5 | 2026-05-30 11:18 | 66.38 / 66.39 | 79.44 / 79.45 | 68.75 / 68.76 | 1 / 1 |
+| 6 | 2026-08-07 16:03 | 27.68 / 27.71 | 151.91 / 151.89 | 99.33 / 99.31 | 1 / 1 |
+| 7 | 2026-08-25 19:27 | 8.41 / 8.51 | 169.34 / 169.26 | 52.26 / 52.58 | 1 / 1 |
+| 8 | 2026-09-05 07:06 | 5.59 / 5.74 | 12.35 / 12.42 | 27.11 / 27.72 | 1 / 1 |
+| 9 | 2026-11-05 00:04 | -59.07 / -59.07 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 10 | 2026-12-18 05:27 | -6.75 / -6.75 | 0 / 0 | 0 / 0 | 0 / 0 |
+
+- All 10 returned HTTP 200. Flask log: 0 GPIO errors.
+- Sun azimuth agrees within 0.02°. Sun altitude within 0.15° (largest at low sun; likely refraction, which the reference omits).
+- Motor X within 0.08°. Motor Y within 0.61°, the largest gap at the lowest sun (case 8).
+- Night cases send the arms home. Homing took about 0.1 s in cases 1 and 2, which suggests the home switch was already active.
+- Commanded X = motor X − 10 (`AZIMUTH_ARC_TRIM_DEG`). At night that is −10, so the arm pushes into the home limit.
+- **Physical check: pending.** The arms were driven for all 10 cases. Compare the arm positions with the commanded values (X = motor X − 10, Y = motor Y).
+
 ## Session log
 
 ### 2026-11-07
