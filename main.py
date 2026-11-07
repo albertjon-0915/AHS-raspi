@@ -71,7 +71,7 @@ def SLR():
         
         # results.append({"axis": axis, "angle": value, "status": "Moved"})
         # results.append(attr)
-    return jsonify({'azimuth': azimuth, 'elevation': altitude })
+    return jsonify({'azimuth': azimuth, 'elevation': altitude, 'isNight': bool(is_night) })
 
 @app.route("/shutdown", methods=['GET', 'POST'])
 def SHTDWN():
