@@ -25,6 +25,8 @@ LIMIT = ButtonBoard(x1=26, x2=16, y1=19, y2=20, pull_up=False)
 # Gear ratios for the X (azimuth) and Y (elevation) stepper motors
 AZIMUTH_GEAR_RATIO = 15
 ELEVATION_GEAR_RATIO = 19.6
+# Night threshold: sun not visible below this
+NIGHT_ANGLE_THRESHOLD = -2.0
 
 # Mechanical trim: the physical azimuth arc has its own ~10 degree limitation,
 # so the computed motor_x angle is shifted down by this before converting to steps.
@@ -51,7 +53,11 @@ def calculate_heliodon_angles(azimuth_deg, altitude_deg):
     Y Motor (motor_y) is arch tilt: 0 = North horizon, 90 = Zenith, 180 = South horizon.
     """
     # Clamp altitude to 0-90 degrees to ensure the sun is above horizon
-    safe_altitude = max(0.0, min(90.0, altitude_deg))
+    # Night check: return resting/home position when sun is below horizon
+    if altitude_deg < NIGHT_ANGLE_THRESHOLD:
+        return {"motor_x": 0.0, "motor_y": 0.0}
+
+    safe_altitude = min(90.0, max(0.0, altitude_deg))
 
     # Convert to radians
     az_rad = math.radians(azimuth_deg)

@@ -114,6 +114,9 @@
             min-width: 250px;
         }
 
+        #disp-sky.day { color: #B25E00; }
+        #disp-sky.night { color: #4F46E5; }
+
         .readout-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -703,6 +706,7 @@
             <div class="metric-item">LON: <span id="nav-lon">--.----</span></div>
             <div class="metric-item">DATE: <span id="nav-date">--/--/----</span></div>
             <div class="metric-item">T: <span id="nav-time">--:--</span></div>
+            <div class="metric-item">SKY: <span id="disp-sky">--</span></div>
         </div>
     </header>
 
@@ -955,7 +959,15 @@
                 document.getElementById('custom-confirm').classList.remove('active');
             };
 
+            window.setSkyStatus = function(isNight) {
+                const el = document.getElementById('disp-sky');
+                if (!el) return;
+                el.className = isNight === undefined ? '' : (isNight ? 'night' : 'day');
+                el.innerText = isNight === undefined ? '--' : (isNight ? 'NIGHT' : 'DAY');
+            };
+
             window.resetSystem = function() {
+                setSkyStatus(undefined);
                 document.getElementById('calForm').reset();
                 ['disp-azimuth', 'disp-altitude', 'nav-lat', 'nav-lon', 'nav-date', 'nav-time'].forEach(id => {
                     const el = document.getElementById(id);
@@ -1231,6 +1243,7 @@
 
                         document.getElementById('disp-azimuth').innerText = jsonResp.azimuth.toFixed(4);
                         document.getElementById('disp-altitude').innerText = jsonResp.elevation.toFixed(4);
+                        setSkyStatus(jsonResp.isNight);
 
                     }).catch(err => console.log("Backend offline (simulation mode)"));
                 });
