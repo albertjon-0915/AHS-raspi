@@ -9,6 +9,7 @@ app = Flask(__name__)
 # This route serves your HTML page
 @app.route('/')
 def WEBSERVE():
+    fn.light('off')
     return render_template('index.html')
 
 @app.route("/calibrate", methods=['GET', 'POST'])
@@ -32,6 +33,7 @@ def SLR():
     # projects 3D solar azimuth/altitude
     # onto the 2D heliodon's 0-180 (X) / 0-90 (Y) physical arcs.
     motor_angles = fn.calculate_heliodon_angles(azimuth, altitude)
+    is_night = altitude < fn.NIGHT_ANGLE_THRESHOLD
 
     data = {
         "azimuth": motor_angles['motor_x'],
@@ -59,7 +61,7 @@ def SLR():
         axis = 'X' if key == 'azimuth' else 'Y'
         
         if key == 'elevation':
-            fn.light('on')
+            fn.light('off' if is_night else 'on')
         
         # Gear ratio of the x and y motor
         gear_ratio = fn.AZIMUTH_GEAR_RATIO if key == 'azimuth' else fn.ELEVATION_GEAR_RATIO
@@ -69,7 +71,7 @@ def SLR():
         
         # results.append({"axis": axis, "angle": value, "status": "Moved"})
         # results.append(attr)
-    return jsonify({'azimuth': azimuth, 'elevation': altitude })
+    return jsonify({'azimuth': azimuth, 'elevation': altitude, 'isNight': bool(is_night) })
 
 @app.route("/shutdown", methods=['GET', 'POST'])
 def SHTDWN():
@@ -89,4 +91,5 @@ def REINIT():
     return "Re-initializing..."
 
 if __name__ == '__main__':
+    fn.light('off')
     app.run(host='0.0.0.0', port=4001)
