@@ -48,7 +48,7 @@ def calculate_heliodon_angles(azimuth_deg, altitude_deg):
     """
     Projects 3D solar angles onto a 2D Heliodon (0-180 degree arc).
     X Motor (motor_x) is carriage angle: 0 = East horizon, 90 = Zenith, 180 = West horizon.
-    Y Motor (motor_y) is arch tilt: 0 = South horizon, 90 = Zenith, 180 = North horizon.
+    Y Motor (motor_y) is arch tilt: 0 = North horizon, 90 = Zenith, 180 = South horizon.
     """
     # Clamp altitude to 0-90 degrees to ensure the sun is above horizon
     safe_altitude = max(0.0, min(90.0, altitude_deg))
